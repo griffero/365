@@ -80,8 +80,8 @@ async function onDownload() {
         <button
           type="button"
           class="rounded-full border border-white/20 bg-white/5 p-2 text-white/80 hover:bg-white/10 hover:text-white/90 active:bg-white/15"
-          aria-label="Download story image"
-          title="Download"
+          aria-label="Share or download story image"
+          title="Save / Share"
           @click="onDownload"
         >
           <svg

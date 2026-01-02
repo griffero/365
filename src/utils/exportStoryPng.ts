@@ -45,6 +45,21 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url)
 }
 
+async function shareBlobAsFile(blob: Blob, filename: string) {
+  const nav = navigator as Navigator & {
+    canShare?: (data: { files?: File[] }) => boolean
+    share?: (data: { files?: File[]; title?: string; text?: string }) => Promise<void>
+  }
+
+  if (!nav.share) return false
+
+  const file = new File([blob], filename, { type: blob.type || 'image/png' })
+  if (nav.canShare && !nav.canShare({ files: [file] })) return false
+
+  await nav.share({ files: [file], title: filename })
+  return true
+}
+
 export async function exportStoryPng(input: ExportStoryPngInput) {
   const width = 1080
   const height = 1920
@@ -157,6 +172,15 @@ export async function exportStoryPng(input: ExportStoryPngInput) {
   })
 
   const filename = safeFilename(`year-progress-${input.year}-${width}x${height}.png`)
+
+  // iOS Safari downloads go to Files. Prefer Share Sheet (allows "Save Image") when available.
+  try {
+    const shared = await shareBlobAsFile(blob, filename)
+    if (shared) return
+  } catch {
+    // If user cancels share or it fails, fall back to download.
+  }
+
   downloadBlob(blob, filename)
 }
 
