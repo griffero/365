@@ -54,20 +54,9 @@ async function onDownload() {
     >
       <header class="flex items-baseline justify-between gap-3">
         <h1 class="text-base font-medium tracking-wide">Year progress</h1>
-        <div class="flex items-start gap-3">
-          <button
-            type="button"
-            class="shrink-0 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-medium tracking-wide text-white/90 hover:bg-white/15 active:bg-white/20"
-            @click="onDownload"
-          >
-            Download
-          </button>
-          <div class="flex flex-col items-end">
-          <div class="text-sm tabular-nums text-white/80">
-            {{ filledCount }} / {{ totalDays }}
-          </div>
+        <div class="flex flex-col items-end">
+          <div class="text-sm tabular-nums text-white/80">{{ filledCount }} / {{ totalDays }}</div>
           <div class="mt-1 text-xs tabular-nums text-white/70">{{ yearPercent }}%</div>
-          </div>
         </div>
       </header>
 
@@ -86,8 +75,32 @@ async function onDownload() {
         </div>
       </div>
 
-      <footer class="pt-4 text-xs text-white/60">
-        {{ year }} • Local time
+      <footer class="pt-4 flex items-center justify-between text-xs text-white/60">
+        <div>{{ year }} • Local time</div>
+        <button
+          type="button"
+          class="rounded-full border border-white/20 bg-white/5 p-2 text-white/80 hover:bg-white/10 hover:text-white/90 active:bg-white/15"
+          aria-label="Download story image"
+          title="Download"
+          @click="onDownload"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3v12" />
+            <path d="M7 10l5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
+        </button>
       </footer>
     </section>
   </main>
