@@ -23,6 +23,8 @@ const year = today.getFullYear()
 const totalDays = computed(() => daysInYear(year))
 const filledCount = computed(() => Math.min(dayOfYear(today), totalDays.value))
 const dots = computed(() => Array.from({ length: totalDays.value }, (_, i) => i))
+
+const yearPercent = computed(() => ((filledCount.value / totalDays.value) * 100).toFixed(1))
 </script>
 
 <template>
@@ -39,7 +41,10 @@ const dots = computed(() => Array.from({ length: totalDays.value }, (_, i) => i)
       aria-label="Year progress"
     >
       <header class="flex items-baseline justify-between">
-        <h1 class="text-base font-medium tracking-wide">Year progress</h1>
+        <div class="flex flex-col">
+          <h1 class="text-base font-medium tracking-wide">Year progress</h1>
+          <div class="mt-1 text-xs tabular-nums text-white/70">{{ yearPercent }}%</div>
+        </div>
         <div class="text-sm tabular-nums text-white/80">
           {{ filledCount }} / {{ totalDays }}
         </div>
