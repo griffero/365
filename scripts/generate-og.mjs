@@ -1,35 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-
-/**
- * This repo historically ran an "OG image generator" step at build time.
- * The implementation is intentionally lightweight here:
- * - If `public/og.png` exists, we do nothing.
- * - If it's missing, we warn but do not fail the build.
- *
- * If you want a dynamic OG image generator (e.g., to stamp the current year),
- * replace this script with a real implementation.
- */
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const repoRoot = path.resolve(__dirname, '..')
-const ogPath = path.join(repoRoot, 'public', 'og.png')
-
-try {
-  await fs.access(ogPath)
-  // eslint-disable-next-line no-console
-  console.log('[generate-og] ok: public/og.png already exists')
-} catch {
-  // eslint-disable-next-line no-console
-  console.warn(
-    '[generate-og] warning: public/og.png not found. Open Graph previews may be missing until you add it.',
-  )
-}
-
-import fs from 'node:fs'
-import path from 'node:path'
 import zlib from 'node:zlib'
 
 const W = 1200
@@ -205,11 +176,17 @@ function writePng(outPath, rgbaBuf) {
     pngChunk('IEND', Buffer.alloc(0)),
   ])
 
-  fs.mkdirSync(path.dirname(outPath), { recursive: true })
-  fs.writeFileSync(outPath, png)
+  return fs
+    .mkdir(path.dirname(outPath), { recursive: true })
+    .then(() => fs.writeFile(outPath, png))
 }
 
 // --- Build the OG image ---
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const repoRoot = path.resolve(__dirname, '..')
+const outPath = path.join(repoRoot, 'public', 'og.png')
+
 const today = new Date()
 const year = today.getFullYear()
 const total = daysInYear(year)
@@ -244,7 +221,7 @@ for (let i = 0; i < total; i++) {
   if (i < filled) fillCircle(rgba, cx, cy, radius - ringT - 1, 255, 255, 255, 255)
 }
 
-writePng('public/og.png', rgba)
-console.log(`Generated public/og.png (${W}x${H}) for ${year}: ${filled}/${total} (${percent}%)`)
+await writePng(outPath, rgba)
+console.log(`Generated ${outPath} (${W}x${H}) for ${year}: ${filled}/${total} (${percent}%)`)
 
 
