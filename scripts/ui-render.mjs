@@ -62,9 +62,11 @@ function renderUiSvg({ w, h, year, filled, total, percent, title, footer }) {
   const statSubSize = isStory ? 30 : 26
   const footerSize = isStory ? 28 : 24
 
-  const headerH = isStory ? 180 : 160
+  // Square posts look better if the grid block sits a bit higher (more visually centered),
+  // so we keep the header readable but reduce the reserved header height + gap.
+  const headerH = isStory ? 180 : 120
   const footerH = isStory ? 96 : 80
-  const sectionGap = isStory ? 56 : 44
+  const sectionGap = isStory ? 56 : 28
 
   const statsXRight = contentX + contentW
 
