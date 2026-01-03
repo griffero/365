@@ -3,7 +3,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { computeYearProgress, renderOgPngBuffer, renderStoryPngBuffer } from './scripts/png-lib.mjs'
+import { computeYearProgress } from './scripts/png-lib.mjs'
+import { renderPostSquarePngBuffer, renderStoryPngBuffer as renderUiStoryPngBuffer, renderUiPngBuffer } from './scripts/ui-render.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -59,8 +60,8 @@ async function handleGenerate(req, res) {
 
   const url = parseUrl(req)
 
-  // format=story (1080x1920) | square (1080x1080) | wide (1200x630)
-  const format = (url.searchParams.get('format') || 'story').toLowerCase()
+  // format=square (1080x1080) [default] | story (1080x1920)
+  const format = (url.searchParams.get('format') || 'square').toLowerCase()
   const timeZone = url.searchParams.get('tz') || undefined
 
   const { year, total, filled, percent } = computeYearProgress({ timeZone })
@@ -68,15 +69,18 @@ async function handleGenerate(req, res) {
   let png
   let filename
 
-  if (format === 'square') {
-    png = renderOgPngBuffer({ w: 1080, h: 1080, filled, total, percent })
-    filename = `year-dots-${year}-square.png`
-  } else if (format === 'wide') {
-    png = renderOgPngBuffer({ w: 1200, h: 630, filled, total, percent })
-    filename = `year-dots-${year}-wide.png`
-  } else {
-    png = renderStoryPngBuffer({ w: 1080, h: 1920, filled, total, percent })
+  if (format === 'story') {
+    png = renderUiStoryPngBuffer({ year, filled, total, percent })
     filename = `year-dots-${year}-story.png`
+  } else if (format === 'square') {
+    png = renderPostSquarePngBuffer({ year, filled, total, percent })
+    filename = `year-dots-${year}-square.png`
+  } else {
+    // Backward compatible: allow custom sizes via w/h if needed (kept undocumented)
+    const w = Number(url.searchParams.get('w') || 1080)
+    const h = Number(url.searchParams.get('h') || 1080)
+    png = renderUiPngBuffer({ w, h, year, filled, total, percent })
+    filename = `year-dots-${year}-${w}x${h}.png`
   }
 
   send(res, 200, png, {
@@ -135,7 +139,7 @@ async function serveStatic(req, res) {
     send(
       res,
       200,
-      `Server running.\n\n- GET /generate (default story 1080x1920)\n- GET /generate?format=square\n- GET /generate?format=wide\n\nBuild the app for static serving: npm run build\n`,
+      `Server running.\n\n- GET /generate (default square 1080x1080)\n- GET /generate?format=story\n- GET /generate?format=square\n\nBuild the app for static serving: npm run build\n`,
       { 'Content-Type': 'text/plain; charset=utf-8' },
     )
   }
@@ -166,7 +170,7 @@ async function start() {
     server.listen(port, () => {
       // eslint-disable-next-line no-console
       console.log(`Dev server: http://localhost:${port}`)
-      console.log(`PNG endpoint: http://localhost:${port}/generate?format=story&tz=America/Santiago`)
+      console.log(`PNG endpoint: http://localhost:${port}/generate?format=square&tz=America/Santiago`)
     })
 
     return
@@ -187,7 +191,7 @@ async function start() {
   server.listen(port, () => {
     // eslint-disable-next-line no-console
     console.log(`Server: http://localhost:${port}`)
-    console.log(`PNG endpoint: http://localhost:${port}/generate?format=story&tz=America/Santiago`)
+    console.log(`PNG endpoint: http://localhost:${port}/generate?format=square&tz=America/Santiago`)
   })
 }
 
