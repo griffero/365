@@ -24,8 +24,8 @@ export function renderUiPngBuffer({
   filled,
   total,
   percent,
-  title = 'Year progress',
-  footer = `${year} • Local time`,
+  title = 'year progress',
+  footer = `${year}`,
 }) {
   const svg = renderUiSvg({ w, h, year, filled, total, percent, title, footer })
   const resvg = new Resvg(svg, {
@@ -114,6 +114,11 @@ function renderUiSvg({ w, h, year, filled, total, percent, title, footer }) {
 
   // Use <text> for typography; resvg will use available fonts on the server.
   // Keep it crisp with dominant-baseline and explicit opacities.
+  const footerY = isStory
+    ? contentY + contentH - footerH + 32
+    : // For square posts, place the year so top/bottom padding feel symmetric.
+      h - safe.bottom - footerSize
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <rect x="0" y="0" width="${w}" height="${h}" fill="#000" />
@@ -138,7 +143,7 @@ function renderUiSvg({ w, h, year, filled, total, percent, title, footer }) {
   </g>
 
   <!-- Footer -->
-  <text x="${contentX}" y="${contentY + contentH - footerH + (isStory ? 32 : 26)}" fill="rgba(255,255,255,0.6)" font-family="${esc(fontStack)}" font-size="${footerSize}" font-weight="500" dominant-baseline="hanging">
+  <text x="${contentX}" y="${footerY}" fill="rgba(255,255,255,0.6)" font-family="${esc(fontStack)}" font-size="${footerSize}" font-weight="500" dominant-baseline="hanging">
     ${esc(footer)}
   </text>
 </svg>`
