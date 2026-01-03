@@ -130,7 +130,7 @@ function renderUiSvg({ w, h, year, filled, total, percent, title, footer }) {
 
   <g font-family="${esc(fontStack)}" text-anchor="end">
     <text x="${statsXRight}" y="${contentY + 8}" fill="rgba(255,255,255,0.82)" font-size="${statSize}" font-weight="500" dominant-baseline="hanging">
-      ${esc(`${filled}/${total}`)}
+      ${esc(`${filled} / ${total}`)}
     </text>
     <text x="${statsXRight}" y="${contentY + 8 + 46}" fill="rgba(255,255,255,0.72)" font-size="${statSubSize}" font-weight="500" dominant-baseline="hanging">
       ${esc(`${percent}%`)}
