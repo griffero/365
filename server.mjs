@@ -25,6 +25,39 @@ function send(res, status, body, headers = {}) {
   res.end(body)
 }
 
+function parseRange(rangeHeader, totalSize) {
+  // Supports: "bytes=start-end" / "bytes=start-" / "bytes=-suffix"
+  if (!rangeHeader) return null
+  const m = /^bytes=(\d*)-(\d*)$/i.exec(String(rangeHeader).trim())
+  if (!m) return null
+
+  const startStr = m[1]
+  const endStr = m[2]
+
+  let start
+  let end
+
+  if (startStr === '' && endStr === '') return null
+
+  if (startStr === '') {
+    // suffix: last N bytes
+    const suffix = Number(endStr)
+    if (!Number.isFinite(suffix) || suffix <= 0) return null
+    start = Math.max(0, totalSize - suffix)
+    end = totalSize - 1
+  } else {
+    start = Number(startStr)
+    if (!Number.isFinite(start) || start < 0) return null
+    end = endStr === '' ? totalSize - 1 : Number(endStr)
+    if (!Number.isFinite(end) || end < 0) return null
+  }
+
+  if (start >= totalSize) return { unsatisfiable: true }
+  end = Math.min(end, totalSize - 1)
+  if (end < start) return null
+  return { start, end }
+}
+
 function notFound(res) {
   send(res, 404, 'Not found', { 'Content-Type': 'text/plain; charset=utf-8' })
 }
@@ -128,6 +161,7 @@ async function handleGenerate(req, res) {
     // n8n will download this; keep it fresh.
     'Cache-Control': 'no-store',
     'Content-Length': String(png.length),
+    'Accept-Ranges': 'bytes',
     'X-Year': String(year),
     'X-Filled': String(filled),
     'X-Total': String(total),
@@ -137,6 +171,28 @@ async function handleGenerate(req, res) {
   if (isHead) {
     res.writeHead(200, headers)
     res.end()
+    return
+  }
+
+  const range = parseRange(req.headers.range, png.length)
+  if (range?.unsatisfiable) {
+    res.writeHead(416, {
+      ...headers,
+      'Content-Range': `bytes */${png.length}`,
+      'Content-Length': '0',
+    })
+    res.end()
+    return
+  }
+
+  if (range && typeof range.start === 'number' && typeof range.end === 'number') {
+    const chunk = png.subarray(range.start, range.end + 1)
+    res.writeHead(206, {
+      ...headers,
+      'Content-Range': `bytes ${range.start}-${range.end}/${png.length}`,
+      'Content-Length': String(chunk.length),
+    })
+    res.end(chunk)
     return
   }
 
