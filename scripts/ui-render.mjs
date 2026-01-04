@@ -1,4 +1,5 @@
 import { Resvg } from '@resvg/resvg-js'
+import jpeg from 'jpeg-js'
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n))
@@ -35,12 +36,44 @@ export function renderUiPngBuffer({
   return resvg.render().asPng()
 }
 
+export function renderUiJpegBuffer(
+  {
+    w,
+    h,
+    year,
+    filled,
+    total,
+    percent,
+    title = 'year progress',
+    footer = `${year}`,
+  },
+  { quality = 90 } = {},
+) {
+  const svg = renderUiSvg({ w, h, year, filled, total, percent, title, footer })
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: 'original' },
+    background: 'black',
+  })
+  const img = resvg.render()
+  // jpeg-js expects RGBA buffer.
+  const encoded = jpeg.encode({ data: img.pixels, width: img.width, height: img.height }, quality)
+  return encoded.data
+}
+
 export function renderPostSquarePngBuffer({ year, filled, total, percent }) {
   return renderUiPngBuffer({ w: 1080, h: 1080, year, filled, total, percent })
 }
 
 export function renderStoryPngBuffer({ year, filled, total, percent }) {
   return renderUiPngBuffer({ w: 1080, h: 1920, year, filled, total, percent })
+}
+
+export function renderPostSquareJpegBuffer({ year, filled, total, percent }, { quality } = {}) {
+  return renderUiJpegBuffer({ w: 1080, h: 1080, year, filled, total, percent }, { quality })
+}
+
+export function renderStoryJpegBuffer({ year, filled, total, percent }, { quality } = {}) {
+  return renderUiJpegBuffer({ w: 1080, h: 1920, year, filled, total, percent }, { quality })
 }
 
 function renderUiSvg({ w, h, year, filled, total, percent, title, footer }) {

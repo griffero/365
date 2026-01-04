@@ -4,7 +4,14 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { computeYearProgress } from './scripts/png-lib.mjs'
-import { renderPostSquarePngBuffer, renderStoryPngBuffer as renderUiStoryPngBuffer, renderUiPngBuffer } from './scripts/ui-render.mjs'
+import {
+  renderPostSquareJpegBuffer,
+  renderPostSquarePngBuffer,
+  renderStoryJpegBuffer,
+  renderStoryPngBuffer as renderUiStoryPngBuffer,
+  renderUiJpegBuffer,
+  renderUiPngBuffer,
+} from './scripts/ui-render.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -62,30 +69,57 @@ async function handleGenerate(req, res) {
   const url = parseUrl(req)
 
   // format=square (1080x1080) [default] | story (1080x1920)
+  // ext=jpg [default] | png
   const format = (url.searchParams.get('format') || 'square').toLowerCase()
+  const ext = (url.searchParams.get('ext') || 'jpg').toLowerCase()
   const timeZone = url.searchParams.get('tz') || undefined
 
   const { year, total, filled, percent } = computeYearProgress({ timeZone })
 
   let png
   let filename
+  let contentType = 'image/jpeg'
 
   if (format === 'story') {
-    png = renderUiStoryPngBuffer({ year, filled, total, percent })
-    filename = `year-dots-${year}-story.png`
+    if (ext === 'png') {
+      png = renderUiStoryPngBuffer({ year, filled, total, percent })
+      filename = `year-dots-${year}-story.png`
+      contentType = 'image/png'
+    } else {
+      const q = Number(url.searchParams.get('q') || 90)
+      png = renderStoryJpegBuffer({ year, filled, total, percent }, { quality: q })
+      filename = `year-dots-${year}-story.jpg`
+      contentType = 'image/jpeg'
+    }
   } else if (format === 'square') {
-    png = renderPostSquarePngBuffer({ year, filled, total, percent })
-    filename = `year-dots-${year}-square.png`
+    if (ext === 'png') {
+      png = renderPostSquarePngBuffer({ year, filled, total, percent })
+      filename = `year-dots-${year}-square.png`
+      contentType = 'image/png'
+    } else {
+      const q = Number(url.searchParams.get('q') || 90)
+      png = renderPostSquareJpegBuffer({ year, filled, total, percent }, { quality: q })
+      filename = `year-dots-${year}-square.jpg`
+      contentType = 'image/jpeg'
+    }
   } else {
     // Backward compatible: allow custom sizes via w/h if needed (kept undocumented)
     const w = Number(url.searchParams.get('w') || 1080)
     const h = Number(url.searchParams.get('h') || 1080)
-    png = renderUiPngBuffer({ w, h, year, filled, total, percent })
-    filename = `year-dots-${year}-${w}x${h}.png`
+    if (ext === 'png') {
+      png = renderUiPngBuffer({ w, h, year, filled, total, percent })
+      filename = `year-dots-${year}-${w}x${h}.png`
+      contentType = 'image/png'
+    } else {
+      const q = Number(url.searchParams.get('q') || 90)
+      png = renderUiJpegBuffer({ w, h, year, filled, total, percent }, { quality: q })
+      filename = `year-dots-${year}-${w}x${h}.jpg`
+      contentType = 'image/jpeg'
+    }
   }
 
   const headers = {
-    'Content-Type': 'image/png',
+    'Content-Type': contentType,
     // n8n will download this; keep it fresh.
     'Cache-Control': 'no-store',
     'Content-Disposition': `inline; filename="${filename}"`,
