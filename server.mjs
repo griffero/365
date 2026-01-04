@@ -53,7 +53,8 @@ function contentTypeFor(filePath) {
 }
 
 async function handleGenerate(req, res) {
-  if (req.method !== 'GET') {
+  const isHead = req.method === 'HEAD'
+  if (req.method !== 'GET' && !isHead) {
     send(res, 405, 'Method not allowed', { 'Content-Type': 'text/plain; charset=utf-8' })
     return
   }
@@ -83,16 +84,25 @@ async function handleGenerate(req, res) {
     filename = `year-dots-${year}-${w}x${h}.png`
   }
 
-  send(res, 200, png, {
+  const headers = {
     'Content-Type': 'image/png',
     // n8n will download this; keep it fresh.
     'Cache-Control': 'no-store',
     'Content-Disposition': `inline; filename="${filename}"`,
+    'Content-Length': String(png.length),
     'X-Year': String(year),
     'X-Filled': String(filled),
     'X-Total': String(total),
     'X-Percent': String(percent),
-  })
+  }
+
+  if (isHead) {
+    res.writeHead(200, headers)
+    res.end()
+    return
+  }
+
+  send(res, 200, png, headers)
 }
 
 async function serveStatic(req, res) {
