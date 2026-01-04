@@ -71,7 +71,12 @@ async function handleGenerate(req, res) {
   // format=square (1080x1080) [default] | story (1080x1920)
   // ext=jpg [default] | png
   const format = (url.searchParams.get('format') || 'square').toLowerCase()
-  const ext = (url.searchParams.get('ext') || 'jpg').toLowerCase()
+  const pathExt = url.pathname.toLowerCase().endsWith('.png')
+    ? 'png'
+    : url.pathname.toLowerCase().endsWith('.jpg') || url.pathname.toLowerCase().endsWith('.jpeg')
+      ? 'jpg'
+      : null
+  const ext = (pathExt || url.searchParams.get('ext') || 'jpg').toLowerCase()
   const timeZone = url.searchParams.get('tz') || undefined
 
   const { year, total, filled, percent } = computeYearProgress({ timeZone })
@@ -122,7 +127,6 @@ async function handleGenerate(req, res) {
     'Content-Type': contentType,
     // n8n will download this; keep it fresh.
     'Cache-Control': 'no-store',
-    'Content-Disposition': `inline; filename="${filename}"`,
     'Content-Length': String(png.length),
     'X-Year': String(year),
     'X-Filled': String(filled),
@@ -203,7 +207,8 @@ async function start() {
     const server = http.createServer(async (req, res) => {
       try {
         const url = parseUrl(req)
-        if (url.pathname === '/generate') return await handleGenerate(req, res)
+        if (url.pathname === '/generate' || url.pathname === '/generate.jpg' || url.pathname === '/generate.jpeg' || url.pathname === '/generate.png')
+          return await handleGenerate(req, res)
         // Let Vite handle everything else in dev
         return vite.middlewares(req, res, () => notFound(res))
       } catch (e) {
@@ -224,7 +229,8 @@ async function start() {
   const server = http.createServer(async (req, res) => {
     try {
       const url = parseUrl(req)
-      if (url.pathname === '/generate') return await handleGenerate(req, res)
+      if (url.pathname === '/generate' || url.pathname === '/generate.jpg' || url.pathname === '/generate.jpeg' || url.pathname === '/generate.png')
+        return await handleGenerate(req, res)
       if (url.pathname === '/healthz') return send(res, 200, 'ok', { 'Content-Type': 'text/plain; charset=utf-8' })
       return await serveStatic(req, res)
     } catch (e) {
